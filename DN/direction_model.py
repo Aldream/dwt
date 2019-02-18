@@ -47,7 +47,7 @@ class Network:
         self.conv5_2 = self._conv_layer(self.conv5_1, params=self._params["direction/conv5_2"])
         self.conv5_3 = self._conv_layer(self.conv5_2, params=self._params["direction/conv5_3"])
 
-        print "built all CNN layers!"
+        print("built all CNN layers!")
 
         self.fcn5_1 = self._conv_layer(self.conv5_3, params=self._params["direction/fcn5_1"])
         self.fcn5_2 = self._conv_layer(self.fcn5_1, params=self._params["direction/fcn5_2"])
@@ -61,7 +61,7 @@ class Network:
         self.fcn3_2 = self._conv_layer(self.fcn3_1, params=self._params["direction/fcn3_2"])
         self.fcn3_3 = self._conv_layer(self.fcn3_2, params=self._params["direction/fcn3_3"])
 
-        print "built all FCN layers!"
+        print("built all FCN layers!")
 
         self.upscore5_3 = self._upscore_layer(self.fcn5_3, params=self._params["direction/upscore5_3"],
                                            shape=tf.shape(self.fcn3_3))
@@ -72,7 +72,7 @@ class Network:
         self.fuse3_1 = self._conv_layer(self.fuse3, params=self._params["direction/fuse3_1"])
         self.fuse3_2 = self._conv_layer(self.fuse3_1, params=self._params["direction/fuse3_2"])
         self.fuse3_3 = self._conv_layer(self.fuse3_2, params=self._params["direction/fuse3_3"])
-        print "built all fusing layers"
+        print("built all fusing layers")
 
         self.output = self._upscore_layer(self.fuse3_3, params=self._params["direction/upscore3_1"],
                                           shape=tf.shape(inputData))
@@ -83,7 +83,7 @@ class Network:
 
         self.output = tf.nn.l2_normalize(self.output, 3, epsilon=1e-20)
 
-        print "built the output layer!"
+        print("built the output layer!")
     # LAYER BUILDING
 
     def _max_pool(self, bottom, name):
@@ -98,7 +98,7 @@ class Network:
         with tf.variable_scope(params["name"]) as scope:
             filt = self.get_conv_filter(params)
 
-            if "dr" in params.keys():
+            if "dr" in list(params.keys()):
                 conv = tf.nn.atrous_conv2d(bottom, filt, params["dr"], padding="SAME")
             else:
                 conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
@@ -112,7 +112,7 @@ class Network:
             elif params["act"] == "tanh":
                 activation = tf.nn.tanh(tf.nn.bias_add(conv, conv_biases))
 
-            if not isinstance(keepProb, (int, long, float)):
+            if not isinstance(keepProb, (int, float)):
                 activation = tf.nn.dropout(activation, keep_prob=keepProb, seed=0)
 
         return activation
@@ -122,10 +122,10 @@ class Network:
     def get_bias(self, params):
         if params["name"]+"/biases" in self.modelDict:
             init = tf.constant_initializer(value=self.modelDict[params["name"]+"/biases"], dtype=tf.float32)
-            print "loaded " + params["name"] + "/biases"
+            print("loaded " + params["name"] + "/biases")
         else:
             init = tf.constant_initializer(value=0.0)
-            print "generated " + params["name"] + "/biases"
+            print("generated " + params["name"] + "/biases")
 
         var = tf.get_variable(name="biases", initializer=init, shape=params["shape"][3])
 
@@ -135,7 +135,7 @@ class Network:
         if params["name"]+"/weights" in self.modelDict:
             init = tf.constant_initializer(value=self.modelDict[params["name"]+"/weights"], dtype=tf.float32)
             var = tf.get_variable(name="weights", initializer=init, shape=params["shape"])
-            print "loaded " + params["name"]+"/weights"
+            print("loaded " + params["name"]+"/weights")
         else:
             if params["std"]:
                 stddev = params["std"]
@@ -145,7 +145,7 @@ class Network:
 
             init = tf.truncated_normal(shape=params["shape"], stddev=stddev, seed=0)
             var = tf.get_variable(name="weights", initializer=init)
-            print "generated " + params["name"] + "/weights"
+            print("generated " + params["name"] + "/weights")
 
         if not tf.get_variable_scope().reuse:
             weightDecay = tf.mul(tf.nn.l2_loss(var), self._wd,

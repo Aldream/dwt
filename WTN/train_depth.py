@@ -35,9 +35,9 @@ def forward_model(model, feeder, outputSavePath):
         keepProb = tf.placeholder("float")
 
         with tf.name_scope("model_builder"):
-            print "attempting to build model"
+            print("attempting to build model")
             model.build(tfBatchDirs, tfBatchSS, keepProb=keepProb)
-            print "built the model"
+            print("built the model")
 
         init = tf.initialize_all_variables()
 
@@ -66,7 +66,7 @@ def forward_model(model, feeder, outputSavePath):
 
                 sio.savemat(outputFilePath, {"depth_map": outputBatch[j]})
 
-                print "processed image %d out of %d"%(j+batchSize*i, feeder.total_samples())
+                print("processed image %d out of %d"%(j+batchSize*i, feeder.total_samples()))
 
 def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, modelSavePath=None, savePrefix=None, initialIteration=1):
     with tf.Session() as sess:
@@ -77,9 +77,9 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
         keepProb = tf.placeholder("float")
 
         with tf.name_scope("model_builder"):
-            print "attempting to build model"
+            print("attempting to build model")
             model.build(tfBatchDirs, tfBatchSS, keepProb=keepProb)
-            print "built the model"
+            print("built the model")
         sys.stdout.flush()
         loss = lossFunction.modelTotalLoss(pred=model.outputData, gt=tfBatchGT, weight=tfBatchWeight, ss=tfBatchSS, outputChannels=outputChannels)
         numPredictedWeighted = lossFunction.countTotalWeighted(ss=tfBatchSS, weight=tfBatchWeight)
@@ -120,15 +120,15 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
                 totalCorrect += batchCorrect
 
             if np.isnan(np.mean(batchLosses)):
-                print "LOSS RETURNED NaN"
+                print("LOSS RETURNED NaN")
                 sys.stdout.flush()
                 return 1
 
             # print "Itr: %d - b %d - val loss: %.3f, depth MSE: %.3f, exceed3: %.3f, exceed5: %.3f"%(iteration,j,
             #     float(np.mean(batchLosses)), totalDepthError/totalPredicted,
             #     totalExceed3/totalPredicted, totalExceed5/totalPredicted)
-            print "%s Itr: %d - val loss: %.6f, correct: %.6f" % (time.strftime("%H:%M:%S"),
-            iteration, float(np.mean(batchLosses)), totalCorrect / totalPredicted)
+            print("%s Itr: %d - val loss: %.6f, correct: %.6f" % (time.strftime("%H:%M:%S"),
+            iteration, float(np.mean(batchLosses)), totalCorrect / totalPredicted))
 
             if (iteration > 0 and iteration % 5 == 0) or checkSaveFlag(modelSavePath):
                 modelSaver(sess, modelSavePath, savePrefix, iteration)

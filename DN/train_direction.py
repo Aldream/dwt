@@ -54,9 +54,9 @@ def forward_model(model, feeder, outputSavePath):
         tfBatchSSMask = tf.placeholder("float", shape=[None, 512, 1024])
 
         with tf.name_scope("model_builder"):
-            print "attempting to build model"
+            print("attempting to build model")
             model.build(tfBatchImages, tfBatchSS, tfBatchSSMask)
-            print "built the model"
+            print("built the model")
         sys.stdout.flush()
 
         init = tf.initialize_all_variables()
@@ -76,7 +76,7 @@ def forward_model(model, feeder, outputSavePath):
 
                 sio.savemat(outputFilePath, {"dir_map": outputBatch[j]}, do_compression=True)
 
-                print "processed image %d out of %d"%(j+batchSize*i, feeder.total_samples())
+                print("processed image %d out of %d"%(j+batchSize*i, feeder.total_samples()))
 
 def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, modelSavePath=None, savePrefix=None, initialIteration=1):
     with tf.Session() as sess:
@@ -87,9 +87,9 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
         tfBatchSSMask = tf.placeholder("float", shape=[None, 512, 1024])
 
         with tf.name_scope("model_builder"):
-            print "attempting to build model"
+            print("attempting to build model")
             model.build(tfBatchImages, tfBatchSS, tfBatchSSMask)
-            print "built the model"
+            print("built the model")
 
         sys.stdout.flush()
         loss = lossFunction.angularErrorLoss(pred=model.output, gt=tfBatchGT, weight=tfBatchWeight, ss=tfBatchSS, outputChannels=outputChannels)
@@ -136,14 +136,14 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
                 totalExceed225 += batchExceed225
 
             if np.isnan(np.mean(batchLosses)):
-                print "LOSS RETURNED NaN"
+                print("LOSS RETURNED NaN")
                 sys.stdout.flush()
                 return 1
 
-            print "%s Itr: %d - val loss: %.3f, angle MSE: %.3f, exceed45: %.3f, exceed22.5: %.3f" % (
+            print("%s Itr: %d - val loss: %.3f, angle MSE: %.3f, exceed45: %.3f, exceed22.5: %.3f" % (
                 time.strftime("%H:%M:%S"), iteration,
             float(np.mean(batchLosses)), totalAngleError / totalPredictedWeighted,
-            totalExceed45 / totalPredicted, totalExceed225 / totalPredicted)
+            totalExceed45 / totalPredicted, totalExceed225 / totalPredicted))
             sys.stdout.flush()
 
             if (iteration > 0 and iteration % 5 == 0) or checkSaveFlag(modelSavePath):

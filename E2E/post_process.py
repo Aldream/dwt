@@ -22,7 +22,7 @@ def watershed_cut(depthImage, ssMask):
     ssMask = ssMask.astype(np.int32)
     resultImage = np.zeros(shape=ssMask.shape, dtype=np.float32)
 
-    for semClass in CLASS_TO_CITYSCAPES.keys():
+    for semClass in list(CLASS_TO_CITYSCAPES.keys()):
         csCode = CLASS_TO_CITYSCAPES[semClass]
         ssCode = CLASS_TO_SS[semClass]
         ssMaskClass = (ssMask == ssCode)
