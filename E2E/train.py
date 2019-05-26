@@ -6,13 +6,13 @@ import time
 
 def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder,
                 modelSavePath=None, savePrefix=None, initialIteration=1, batchSize=1):
-    with tf.Session() as sess:
-        tfBatchImages = tf.placeholder("float")
-        tfBatchGT = tf.placeholder("float")
-        tfBatchWeight = tf.placeholder("float")
-        tfBatchSS = tf.placeholder("float")
-        tfBatchSSMask = tf.placeholder("float")
-        keepProb = tf.placeholder("float")
+    with tf.compat.v1.Session() as sess:
+        tfBatchImages = tf.compat.v1.placeholder("float")
+        tfBatchGT = tf.compat.v1.placeholder("float")
+        tfBatchWeight = tf.compat.v1.placeholder("float")
+        tfBatchSS = tf.compat.v1.placeholder("float")
+        tfBatchSSMask = tf.compat.v1.placeholder("float")
+        keepProb = tf.compat.v1.placeholder("float")
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
@@ -28,9 +28,9 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder,
         print("setting adam optimizer")
         sys.stdout.flush()
 
-        train_op = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
+        train_op = tf.compat.v1.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
         print("attempting to run init")
         sys.stdout.flush()
 

@@ -6,7 +6,7 @@ from re import split
 def modelSaver(sess, modelSavePath, savePrefix, iteration, maxToKeep=5):
     allWeights = {}
 
-    for name in [n.name for n in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)]:
+    for name in [n.name for n in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)]:
         param = sess.run(name)
         nameParts = split('[:/]', name)
         saveName = nameParts[-4]+'/'+nameParts[-3]+'/'+nameParts[-2]

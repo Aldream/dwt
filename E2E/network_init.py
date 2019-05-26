@@ -1,4 +1,4 @@
-import dwt_python3.E2E.e2e_model as e2e_model
+import dwt_python3_tf2.E2E.e2e_model as e2e_model 
 def get_model(wd=None, modelWeightPaths=None):
     params = {
         "direction/conv1_1": {"name": "direction/conv1_1", "shape": [3, 3, 4, 64], "std": None, "act": "relu"},

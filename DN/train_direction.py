@@ -12,7 +12,7 @@ import time
 
 VGG_MEAN = [103.939, 116.779, 123.68]
 
-tf.set_random_seed(0)
+tf.compat.v1.set_random_seed(0)
 
 def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     fuseChannels=256
@@ -48,10 +48,10 @@ def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     return direction_model.Network(params, wd=wd, modelWeightPaths=modelWeightPaths)
 
 def forward_model(model, feeder, outputSavePath):
-    with tf.Session() as sess:
-        tfBatchImages = tf.placeholder("float", shape=[None, 512, 1024, 3])
-        tfBatchSS = tf.placeholder("float", shape=[None, 512, 1024])
-        tfBatchSSMask = tf.placeholder("float", shape=[None, 512, 1024])
+    with tf.compat.v1.Session() as sess:
+        tfBatchImages = tf.compat.v1.placeholder("float", shape=[None, 512, 1024, 3])
+        tfBatchSS = tf.compat.v1.placeholder("float", shape=[None, 512, 1024])
+        tfBatchSSMask = tf.compat.v1.placeholder("float", shape=[None, 512, 1024])
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
@@ -59,7 +59,7 @@ def forward_model(model, feeder, outputSavePath):
             print("built the model")
         sys.stdout.flush()
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
         sess.run(init)
 
         for i in range(int(math.floor(feeder.total_samples() / batchSize))):
@@ -79,12 +79,12 @@ def forward_model(model, feeder, outputSavePath):
                 print("processed image %d out of %d"%(j+batchSize*i, feeder.total_samples()))
 
 def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, modelSavePath=None, savePrefix=None, initialIteration=1):
-    with tf.Session() as sess:
-        tfBatchImages = tf.placeholder("float", shape=[None, 512, 1024, 3])
-        tfBatchGT = tf.placeholder("float", shape=[None, 512, 1024, 2])
-        tfBatchWeight = tf.placeholder("float", shape=[None, 512, 1024])
-        tfBatchSS = tf.placeholder("float", shape=[None, 512, 1024])
-        tfBatchSSMask = tf.placeholder("float", shape=[None, 512, 1024])
+    with tf.compat.v1.Session() as sess:
+        tfBatchImages = tf.compat.v1.placeholder("float", shape=[None, 512, 1024, 3])
+        tfBatchGT = tf.compat.v1.placeholder("float", shape=[None, 512, 1024, 2])
+        tfBatchWeight = tf.compat.v1.placeholder("float", shape=[None, 512, 1024])
+        tfBatchSS = tf.compat.v1.placeholder("float", shape=[None, 512, 1024])
+        tfBatchSSMask = tf.compat.v1.placeholder("float", shape=[None, 512, 1024])
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
@@ -102,9 +102,9 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
         exceed225 = lossFunction.exceedingAngleThreshold(pred=model.output, gt=tfBatchGT,
                                                         ss=tfBatchSS, threshold=22.5, outputChannels=outputChannels)
 
-        train_op = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
+        train_op = tf.compat.v1.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
 
         sess.run(init)
         iteration = initialIteration
@@ -162,7 +162,7 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
 
 def modelSaver(sess, modelSavePath, savePrefix, iteration, maxToKeep=5):
     allWeights = {}
-    for name in [n.name for n in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)]:
+    for name in [n.name for n in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)]:
         param = sess.run(name)
         nameParts = re.split('[:/]', name)
         saveName = nameParts[-4]+'/'+nameParts[-3]+'/'+nameParts[-2]

@@ -20,8 +20,7 @@ class Network:
             ss = tf.expand_dims(ss,-1)
             inputData = inputData * ss
 
-        print(inputData.shape, ssMask.shape)
-        inputData = tf.concat([tf.to_float(inputData), tf.expand_dims(ssMask,-1)], axis=-1)
+        inputData = tf.concat([tf.cast(inputData, dtype=tf.float32), tf.expand_dims(ssMask,-1)], axis=-1)
 
         print("building direction net")
 
@@ -62,9 +61,9 @@ class Network:
         self.fcn3_3 = self._conv_layer(self.fcn3_2, params=self._params["direction/fcn3_3"])
 
         self.upscore5_3 = self._upscore_layer(self.fcn5_3, params=self._params["direction/upscore5_3"],
-                                           shape=tf.shape(self.fcn3_3))
+                                           shape=tf.shape(input=self.fcn3_3))
         self.upscore4_3 = self._upscore_layer(self.fcn4_3, params=self._params["direction/upscore4_3"],
-                                           shape=tf.shape(self.fcn3_3))
+                                           shape=tf.shape(input=self.fcn3_3))
 
         self.fuse3 = tf.concat([self.fcn3_3, self.upscore5_3, self.upscore4_3], axis=-1, name="direction/fuse3")
         self.fuse3_1 = self._conv_layer(self.fuse3, params=self._params["direction/fuse3_1"])
@@ -72,7 +71,7 @@ class Network:
         self.fuse3_3 = self._conv_layer(self.fuse3_2, params=self._params["direction/fuse3_3"])
 
         self.direction = self._upscore_layer(self.fuse3_3, params=self._params["direction/upscore3_1"],
-                                          shape=tf.shape(inputData))
+                                          shape=tf.shape(input=inputData))
 
         if ss is not None:
             self.direction = self.direction * ss
@@ -97,28 +96,28 @@ class Network:
         self.fcn2 = self._conv_layer(self.fcn1, params=self._params["depth/fcn2"], keepProb=keepProb)
 
         self.outputData = self._upscore_layer(self.fcn2, params=self._params["depth/upscore"],
-                                       shape=tf.shape(inputData))
+                                       shape=tf.shape(input=inputData))
 
         if ss is not None:
             self.outputData = self.outputData * ss
 
-        self.outputDataArgMax = tf.argmax(input=self.outputData, dimension=3)
+        self.outputDataArgMax = tf.argmax(input=self.outputData, axis=3)
 
         print("built the depth net!")
 
     # LAYER BUILDING
 
     def _max_pool(self, bottom, name):
-        return tf.nn.max_pool(tf.to_float(bottom), ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
+        return tf.nn.max_pool(tf.cast(bottom, dtype=tf.float32), ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
                               padding='SAME', name=name)
 
     def _average_pool(self, bottom, name):
-        return tf.nn.avg_pool(tf.to_float(bottom), ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
+        return tf.nn.avg_pool(tf.cast(bottom, dtype=tf.float32), ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
                               padding='SAME', name=name)
 
     def _conv_layer(self, bottom, params, keepProb=1.0):
-        with tf.variable_scope(params["name"]) as scope:
-            bottom = tf.to_float(bottom)
+        with tf.compat.v1.variable_scope(params["name"]) as scope:
+            bottom = tf.cast(bottom, dtype=tf.float32)
             filt = self.get_conv_filter(params)
 
             if "dr" in list(params.keys()):
@@ -136,7 +135,7 @@ class Network:
                 activation = tf.nn.tanh(tf.nn.bias_add(conv, conv_biases))
 
             if not isinstance(keepProb, (int, float)):
-                activation = tf.nn.dropout(activation, keep_prob=keepProb)
+                activation = tf.nn.dropout(activation, rate=1 - (keepProb))
 
         return activation
 
@@ -149,12 +148,12 @@ class Network:
             trainable = True
 
         if params["name"] + "/biases" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"] + "/biases"], dtype=tf.float32)
+            init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"] + "/biases"], dtype=tf.float32)
             print("loaded " + params["name"] + "/biases")
         else:
-            init = tf.constant_initializer(value=0.0)
+            init = tf.compat.v1.initializers.constant(value=0.0)
             print("generated " + params["name"] + "/biases")
-        var = tf.get_variable(name="biases", initializer=init, shape=params["shape"][3], trainable=trainable)
+        var = tf.compat.v1.get_variable(name="biases", initializer=init, shape=params["shape"][3], trainable=trainable)
 
         return var
 
@@ -165,7 +164,7 @@ class Network:
             trainable = True
 
         if params["name"] + "/weights" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"] + "/weights"], dtype=tf.float32)
+            init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"] + "/weights"], dtype=tf.float32)
             print("loaded " + params["name"] + "/weights")
         else:
             if params["std"]:
@@ -174,25 +173,25 @@ class Network:
                 fanIn = params["shape"][0] * params["shape"][1] * params["shape"][2]
                 stddev = (2 / fanIn) ** 0.5
 
-            init = tf.truncated_normal(shape=params["shape"], stddev=stddev)
+            init = tf.random.truncated_normal(shape=params["shape"], stddev=stddev)
             print("generated " + params["name"] + "/weights")
 
-        var = tf.get_variable(name="weights", initializer=init, shape=params["shape"], trainable=trainable)
+        var = tf.compat.v1.get_variable(name="weights", initializer=init, shape=params["shape"], trainable=trainable)
 
-        if not tf.get_variable_scope().reuse and self._wd:
+        if not tf.compat.v1.get_variable_scope().reuse and self._wd:
             weightDecay = tf.mul(tf.nn.l2_loss(var), self._wd,
                                  name='weight_loss')
-            tf.add_to_collection('losses', weightDecay)
+            tf.compat.v1.add_to_collection('losses', weightDecay)
 
         return var
 
     def _upscore_layer(self, bottom, shape, params):
         strides = [1, params["stride"], params["stride"], 1]
-        with tf.variable_scope(params["name"]):
-            in_features = bottom.get_shape()[3].value
+        with tf.compat.v1.variable_scope(params["name"]):
+            in_features = bottom.get_shape()[3]
 
             if shape is None:
-                in_shape = tf.shape(bottom)
+                in_shape = tf.shape(input=bottom)
 
                 h = ((in_shape[1] - 1) * params["stride"]) + 1
                 w = ((in_shape[2] - 1) * params["stride"]) + 1
@@ -214,8 +213,8 @@ class Network:
         else:
             trainable = True
         if params["name"]+"/up_filter" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"]+"/up_filter"], dtype=tf.float32)
-            print("loaded " + params["name"] + "/up_filter")
+            # init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"]+"/up_filter"], dtype=tf.float32)
+            init = self.modelDict[params["name"]+"/up_filter"]
         else:
             width = f_shape[0]
             height = f_shape[0]
@@ -230,7 +229,8 @@ class Network:
             for i in range(f_shape[2]):
                 weights[:, :, i, i] = bilinear
 
-            init = tf.constant_initializer(value=weights,
-                                           dtype=tf.float32)
+            # init = tf.compat.v1.initializers.constant(value=weights,
+            #                                dtype=tf.float32)
+            init = weights
             print("generated " + params["name"] + "/up_filter")
-        return tf.get_variable(name="up_filter", initializer=init, shape=f_shape, trainable=trainable)
+        return tf.Variable(initial_value=init, trainable=trainable) # tf.compat.v1.get_variable(name="up_filter", initializer=init, shape=f_shape, trainable=trainable)

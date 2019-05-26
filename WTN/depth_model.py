@@ -9,9 +9,9 @@ VGG_MEAN = [103.939, 116.779, 123.68]
 class Network:
     def __init__(self, params, wd=5e-5, modelWeightPaths=None):
         self._params = params
-        self._images = tf.placeholder("float")
+        self._images = tf.compat.v1.placeholder("float")
         self._batch_images = tf.expand_dims(self._images, 0)
-        self._gt = tf.placeholder("float")
+        self._gt = tf.compat.v1.placeholder("float")
         self._batch_gt = tf.expand_dims(self._gt, 0)
         self._wd = wd
 
@@ -36,9 +36,9 @@ class Network:
         self.fcn2 = self._conv_layer_dropout(self.fcn1, params=self._params["depth/fcn2"], keepProb=keepProb)
 
         self.outputData = self._upscore_layer(self.fcn2, params=self._params["depth/upscore"],
-                                       shape=tf.shape(inputData))
+                                       shape=tf.shape(input=inputData))
 
-        self.outputDataArgMax = tf.argmax(input=self.outputData, dimension=3)
+        self.outputDataArgMax = tf.argmax(input=self.outputData, axis=3)
 
 
     def _max_pool(self, bottom, name):
@@ -50,7 +50,7 @@ class Network:
                               padding='SAME', name=name)
 
     def _conv_layer(self, bottom, params):
-        with tf.variable_scope(params["name"]) as scope:
+        with tf.compat.v1.variable_scope(params["name"]) as scope:
             filt = self.get_conv_filter(params)
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
 
@@ -66,7 +66,7 @@ class Network:
         return activation
 
     def _conv_layer_dropout(self, bottom, params, keepProb):
-        with tf.variable_scope(params["name"]) as scope:
+        with tf.compat.v1.variable_scope(params["name"]) as scope:
             filt = self.get_conv_filter(params)
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
 
@@ -79,7 +79,7 @@ class Network:
             elif params["act"] == "tanh":
                 activation = tf.nn.tanh(tf.nn.bias_add(conv, conv_biases))
 
-            activation = tf.nn.dropout(activation, keepProb, seed=0)
+            activation = tf.nn.dropout(activation, 1 - (keepProb), seed=0)
 
         return activation
 
@@ -87,20 +87,20 @@ class Network:
 
     def get_bias(self, params):
         if params["name"]+"/biases" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"]+"/biases"], dtype=tf.float32)
+            init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"]+"/biases"], dtype=tf.float32)
             print("loaded " + params["name"] + "/biases")
         else:
-            init = tf.constant_initializer(value=0.0)
+            init = tf.compat.v1.initializers.constant(value=0.0)
             print("generated " + params["name"] + "/biases")
 
-        var = tf.get_variable(name="biases", initializer=init, shape=params["shape"][3])
+        var = tf.compat.v1.get_variable(name="biases", initializer=init, shape=params["shape"][3])
 
         return var
 
     def get_conv_filter(self, params):
         if params["name"]+"/weights" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"]+"/weights"], dtype=tf.float32)
-            var = tf.get_variable(name="weights", initializer=init, shape=params["shape"])
+            init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"]+"/weights"], dtype=tf.float32)
+            var = tf.compat.v1.get_variable(name="weights", initializer=init, shape=params["shape"])
             print("loaded " + params["name"]+"/weights")
         else:
             if params["std"]:
@@ -109,20 +109,20 @@ class Network:
                 fanIn = params["shape"][0]*params["shape"][1]*params["shape"][2]
                 stddev = (2/float(fanIn))**0.5
 
-            init = tf.truncated_normal(shape=params["shape"], stddev=stddev, seed=0)
-            var = tf.get_variable(name="weights", initializer=init)
+            init = tf.random.truncated_normal(shape=params["shape"], stddev=stddev, seed=0)
+            var = tf.compat.v1.get_variable(name="weights", initializer=init)
             print("generated " + params["name"] + "/weights")
 
-        if not tf.get_variable_scope().reuse:
+        if not tf.compat.v1.get_variable_scope().reuse:
             weightDecay = tf.mul(tf.nn.l2_loss(var), self._wd,
                                   name='weight_loss')
-            tf.add_to_collection('losses', weightDecay)
+            tf.compat.v1.add_to_collection('losses', weightDecay)
 
         return var
 
     def _upscore_layer(self, bottom, shape, params):
         strides = [1, params["stride"], params["stride"], 1]
-        with tf.variable_scope(params["name"]):
+        with tf.compat.v1.variable_scope(params["name"]):
             in_features = bottom.get_shape()[3].value
 
             new_shape = [shape[0], shape[1], shape[2], params["outputChannels"]]
@@ -137,7 +137,7 @@ class Network:
 
     def get_deconv_filter(self, f_shape, params):
         if params["name"]+"/up_filter" in self.modelDict:
-            init = tf.constant_initializer(value=self.modelDict[params["name"]+"/up_filter"], dtype=tf.float32)
+            init = tf.compat.v1.initializers.constant(value=self.modelDict[params["name"]+"/up_filter"], dtype=tf.float32)
             print("loaded " + params["name"]+"/up_filter")
         else:
             width = f_shape[0]
@@ -153,8 +153,8 @@ class Network:
             for i in range(f_shape[2]):
                 weights[:, :, i, i] = bilinear
 
-            init = tf.constant_initializer(value=weights,
+            init = tf.compat.v1.initializers.constant(value=weights,
                                            dtype=tf.float32)
             print("generated " + params["name"] + "/up_filter")
 
-        return tf.get_variable(name="up_filter", initializer=init, shape=f_shape)
+        return tf.compat.v1.get_variable(name="up_filter", initializer=init, shape=f_shape)

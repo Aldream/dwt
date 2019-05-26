@@ -8,18 +8,18 @@ import scipy.ndimage.interpolation
 from post_process import *
 
 def forward_model(model, feeder, outputSavePath, batchSize=1):
-    with tf.Session() as sess:
-        tfBatchImages = tf.placeholder(dtype="float", shape=[None, None, None, None])
-        tfBatchSS = tf.placeholder(dtype="float", shape=[None, None, None])
-        tfBatchSSMask = tf.placeholder(dtype="float", shape=[None, None, None])
-        keepProb = tf.placeholder("float")
+    with tf.compat.v1.Session() as sess:
+        tfBatchImages = tf.compat.v1.placeholder(dtype="float", shape=[None, None, None, None])
+        tfBatchSS = tf.compat.v1.placeholder(dtype="float", shape=[None, None, None])
+        tfBatchSSMask = tf.compat.v1.placeholder(dtype="float", shape=[None, None, None])
+        keepProb = tf.compat.v1.placeholder("float")
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
             model.build(tfBatchImages, tfBatchSS, tfBatchSSMask, keepProb=keepProb)
             print("built the model")
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
 
         sess.run(init)
 

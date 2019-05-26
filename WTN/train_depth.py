@@ -12,7 +12,7 @@ import time
 
 VGG_MEAN = [103.939, 116.779, 123.68]
 
-tf.set_random_seed(0)
+tf.compat.v1.set_random_seed(0)
 
 def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     params = {"depth/conv1_1": {"name": "depth/conv1_1", "shape": [5,5,2,64], "std": None, "act": "relu", "reuse": False},
@@ -29,17 +29,17 @@ def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     return depth_model.Network(params, wd=wd, modelWeightPaths=modelWeightPaths)
 
 def forward_model(model, feeder, outputSavePath):
-    with tf.Session() as sess:
-        tfBatchDirs = tf.placeholder("float")
-        tfBatchSS = tf.placeholder("float")
-        keepProb = tf.placeholder("float")
+    with tf.compat.v1.Session() as sess:
+        tfBatchDirs = tf.compat.v1.placeholder("float")
+        tfBatchSS = tf.compat.v1.placeholder("float")
+        keepProb = tf.compat.v1.placeholder("float")
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
             model.build(tfBatchDirs, tfBatchSS, keepProb=keepProb)
             print("built the model")
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
 
         sess.run(init)
 
@@ -69,12 +69,12 @@ def forward_model(model, feeder, outputSavePath):
                 print("processed image %d out of %d"%(j+batchSize*i, feeder.total_samples()))
 
 def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, modelSavePath=None, savePrefix=None, initialIteration=1):
-    with tf.Session() as sess:
-        tfBatchDirs = tf.placeholder("float")
-        tfBatchGT = tf.placeholder("float")
-        tfBatchWeight = tf.placeholder("float")
-        tfBatchSS = tf.placeholder("float")
-        keepProb = tf.placeholder("float")
+    with tf.compat.v1.Session() as sess:
+        tfBatchDirs = tf.compat.v1.placeholder("float")
+        tfBatchGT = tf.compat.v1.placeholder("float")
+        tfBatchWeight = tf.compat.v1.placeholder("float")
+        tfBatchSS = tf.compat.v1.placeholder("float")
+        keepProb = tf.compat.v1.placeholder("float")
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
@@ -86,9 +86,9 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
         numPredicted = lossFunction.countTotal(ss=tfBatchSS)
         numCorrect = lossFunction.countCorrect(pred=model.outputData, gt=tfBatchGT, ss=tfBatchSS, k=1, outputChannels=outputChannels)
 
-        train_op = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
+        train_op = tf.compat.v1.train.AdamOptimizer(learning_rate=learningRate).minimize(loss=loss)
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
 
         sess.run(init)
         iteration = initialIteration
@@ -153,7 +153,7 @@ def train_model(model, outputChannels, learningRate, trainFeeder, valFeeder, mod
 def modelSaver(sess, modelSavePath, savePrefix, iteration, maxToKeep=5):
     allWeights = {}
 
-    for name in [n.name for n in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)]:
+    for name in [n.name for n in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)]:
         param = sess.run(name)
         nameParts = re.split('[:/]', name)
         saveName = nameParts[-4]+'/'+nameParts[-3]+'/'+nameParts[-2]

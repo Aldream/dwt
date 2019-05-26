@@ -8,7 +8,7 @@ import skimage.io
 
 VGG_MEAN = [103.939, 116.779, 123.68]
 
-tf.set_random_seed(0)
+tf.compat.v1.set_random_seed(0)
 
 def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     params = {
@@ -55,19 +55,19 @@ def initialize_model(outputChannels, wd=None, modelWeightPaths=None):
     return joint_model2_wide.Network(params, wd=wd, modelWeightPaths=modelWeightPaths)
 
 def forward_model(model, feeder, outputSavePath):
-    with tf.Session() as sess:
-        images = tf.placeholder("float")
+    with tf.compat.v1.Session() as sess:
+        images = tf.compat.v1.placeholder("float")
         tfBatchImages = tf.expand_dims(images, 0)
-        ss = tf.placeholder("float")
+        ss = tf.compat.v1.placeholder("float")
         tfBatchSS = tf.expand_dims(ss, 0)
-        keepProb = tf.placeholder("float")
+        keepProb = tf.compat.v1.placeholder("float")
 
         with tf.name_scope("model_builder"):
             print("attempting to build model")
             model.build(tfBatchImages, tfBatchSS, keepProb=keepProb)
             print("built the model")
 
-        init = tf.initialize_all_variables()
+        init = tf.compat.v1.initialize_all_variables()
 
         sess.run(init)
 
@@ -138,4 +138,4 @@ if __name__ == "__main__":
         forward_model(model, feeder=feeder,
                       outputSavePath="/ais/gobi4/mbai/instance_seg/training/outputs/%s/%s/%s"%(outputPrefix, outputSet, type))
 
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
